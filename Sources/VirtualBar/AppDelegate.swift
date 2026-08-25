@@ -32,6 +32,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var terminationSources: [DispatchSourceSignal] = []
     private var isReady = false
     private let foldedLength: CGFloat = 10_000
+    /// Whether the third-party items are currently folded away. Tracked so
+    /// "Show Real Items" can offer a way back.
+    private var isFolded = false
 
     private var ownPID: pid_t { ProcessInfo.processInfo.processIdentifier }
 
@@ -139,6 +142,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func openVirtualBar() {
+        if !isFolded { setFolded(true) }
         refreshRegistry()
         let items = preferences.displayed(configurableItems)
         guard !items.isEmpty,
@@ -449,6 +453,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setFolded(_ folded: Bool) {
+        isFolded = folded
         spacerItem?.length = folded ? foldedLength : 0
         debugLog("VirtualBar folded=\(folded) spacer=\(spacerItem?.length ?? 0)")
     }
@@ -463,8 +468,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
         let refresh = menu.addItem(withTitle: "Refresh Items", action: #selector(refreshFromMenu), keyEquivalent: "r")
         refresh.target = self
-        let reveal = menu.addItem(withTitle: "Show Real Items", action: #selector(showRealItems), keyEquivalent: "")
+        let reveal = menu.addItem(
+            withTitle: isFolded ? "Show Real Items" : "Hide Real Items",
+            action: #selector(toggleRealItems),
+            keyEquivalent: ""
+        )
         reveal.target = self
+        reveal.state = isFolded ? .off : .on
         menu.addItem(.separator())
         let quit = menu.addItem(withTitle: "Quit VirtualBar", action: #selector(quitApp), keyEquivalent: "q")
         quit.target = self
@@ -516,11 +526,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         debugLog("VirtualBar settings visible=\(preferences.displayed(configurableItems).count) total=\(configurableItems.count)")
     }
 
-    @objc private func showRealItems() {
+    /// Reveals the real status items, or folds them back again.
+    ///
+    /// This has to be a toggle. Revealing cancels the activation task, and
+    /// that task owns the only other call to `finishActivation()` — so a
+    /// one-way "show" left the menu bar expanded with nothing able to fold it
+    /// back short of relaunching.
+    @objc private func toggleRealItems() {
         closeVirtualBar()
         activationTask?.cancel()
         activationTask = nil
-        setFolded(false)
+        stopActivationFocusMonitoring()
+        setFolded(!isFolded)
+        toggleItem.button?.toolTip = isFolded ? "Show Virtual Bar" : "Real items shown"
     }
 
     @objc private func quitApp() {

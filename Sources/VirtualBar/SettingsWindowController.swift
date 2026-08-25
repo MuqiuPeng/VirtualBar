@@ -67,11 +67,9 @@ private final class SettingsItemCell: NSTableCellView {
         nameLabel.stringValue = item.ownerName
         let title = item.id.accessibilityTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         detailLabel.stringValue = title.isEmpty ? item.bundleIdentifier : title
-        if let image {
-            iconView.image = image
-        } else {
-            iconView.image = NSRunningApplication(processIdentifier: item.pid)?.icon
-        }
+        // Matches the iconView size constraint below, so the fallback lands at
+        // the same weight as a captured glyph rather than being rescaled.
+        iconView.image = image ?? ItemIcon.fallback(for: item, size: 30)
         toolTip = item.id.description
     }
 }

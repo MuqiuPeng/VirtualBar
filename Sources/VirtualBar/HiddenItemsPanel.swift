@@ -203,11 +203,8 @@ final class HiddenItemsPanel: NSPanel {
         if let image {
             image.size = NSSize(width: Metrics.iconSize, height: Metrics.iconSize)
             button.image = image
-        } else if let fallback = NSRunningApplication(processIdentifier: item.pid)?.icon {
-            fallback.size = NSSize(width: Metrics.iconSize, height: Metrics.iconSize)
-            button.image = fallback
         } else {
-            button.title = String(item.ownerName.prefix(2))
+            button.image = ItemIcon.fallback(for: item, size: Metrics.iconSize)
         }
         return button
     }
