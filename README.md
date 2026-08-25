@@ -1,54 +1,10 @@
 # VirtualBar
 
-VirtualBar 是一个面向 macOS 14 及以上版本的虚拟菜单栏 POC。
+**English** · [简体中文](README.zh-CN.md)
 
-## 当前实现
+VirtualBar is a proof of concept for a virtual menu bar on macOS 14 and later.
 
-VirtualBar 在系统菜单栏中只保留一个切换按钮和一个隐藏 spacer。第三方菜单栏图标被 spacer 折叠后，点击 VirtualBar 按钮会出现一个紧凑的虚拟 Bar。虚拟 Bar 中展示的是通过 ScreenCaptureKit 获取的实时图标图像，点击时通过 Accessibility 对原始第三方 status item 执行 `AXPress`。
-
-虚拟 Bar 不再按原始屏幕坐标摆放图标，而是采用紧凑单行布局。内容超过 520pt 时可横向滚动，因此不会因为原始图标位于刘海后方或屏幕外而把虚拟 Bar 撑出屏幕。
-
-当前 UI 使用纯三个实心点作为 VirtualBar 图标，不带外圈。虚拟 Bar 图标为 34pt、点击区域为 40pt，面板高度为 48pt，最大宽度为 520pt。每个按钮都有 hover 和 pressed 强调色背景反馈；面板使用无标题无边框且不可调整尺寸的窗口、12pt 连续圆角、零边框宽度和无系统窗口阴影，并关闭窗口内容与按钮的焦点环。
-
-虚拟 Bar 以 VirtualBar 菜单栏按钮为锚点，并在原位置基础上向右偏移 28pt。右键点击 VirtualBar 图标后选择 `Settings…` 可以打开设置窗口。设置窗口支持勾选进入虚拟 Bar 的图标、拖拽调整顺序、刷新当前第三方图标以及恢复系统自然顺序。
-
-图标显示状态和顺序使用稳定的 item identity 持久化，不使用列表下标。第三方 item 动态新增时会按系统自然顺序补入，临时消失的 item 不会删除已有偏好，重新出现后会恢复其显示状态和顺序。
-
-点击任一虚拟图标后：
-
-1. 虚拟 Bar 同步关闭。
-2. spacer 暂时归零，让原始 status item 回到自然位置。
-3. VirtualBar 重新解析该 item 的实时 window identity 和 frame。
-4. 对原始 item 执行 `AXPress`。
-5. 持续监测目标进程新出现的菜单或 Popover 窗口。
-6. 只有目标界面真正关闭后才重新折叠第三方图标。
-
-这避免了旧实现中菜单刚打开就因为 spacer 被立即恢复而失焦消失的问题。监测到界面后没有固定的短超时，菜单可以一直保持；只有其窗口消失并连续稳定一秒后才回收布局。如果某个应用无法暴露可监测窗口，VirtualBar 会保留展开状态至少 20 秒。
-
-目标界面失焦时也会自动回收。VirtualBar 同时监测目标弹层之外的全局鼠标点击和前台应用切换；外部交互发生后等待 250ms，再恢复 spacer。点击目标菜单或 Popover 内部不会触发回收，因为点击位置会和目标进程新增窗口的实时 frame 做命中判断。
-
-点击结果会区分弹层和普通窗口跳转。菜单或 Popover 窗口继续按完整生命周期保持；如果目标应用进入前台，或者新增的是普通应用窗口，并且 600ms 内没有发现弹层窗口，则视为窗口跳转已经完成并立即恢复 spacer。这样打开 Notion 一类主窗口的入口不会继续占用展开后的菜单栏空间。
-
-`AXPress` 返回 `AXError.cannotComplete` 时不再立即判定为失败。状态栏菜单进入同步 tracking loop 后经常无法及时回应 AX 请求，但动作已经投递且菜单已经出现；VirtualBar 会继续进入窗口生命周期监测，避免错误地立刻恢复 spacer。
-
-旧分页遮罩和 menu bar curtain 已从运行代码中移除，虚拟 Bar 不会在菜单栏上绘制深色覆盖区域。
-
-## 能力边界
-
-- 普通第三方 status item：支持捕获和 Accessibility 激活。
-- 系统 Control Center：不纳入虚拟 Bar。
-- Live Activity：不纳入虚拟 Bar。
-- 单个第三方 status item 的跨进程坐标写入：公开 API 和 Accessibility 均不支持。
-- 菜单锚点仍由第三方应用自己的真实 status item 决定，VirtualBar 不伪造菜单。
-
-## 权限
-
-- Accessibility 用于激活原始第三方 status item。
-- Screen Recording 用于捕获真实图标。未授权时使用所属应用图标作为回退。
-
-如果 Accessibility 尚未生效，VirtualBar 会保持真实图标展开，不会先把它们隐藏。
-
-## 安装
+## Install
 
 ```bash
 curl -fsSL https://github.com/MuqiuPeng/VirtualBar/releases/latest/download/VirtualBar.zip -o /tmp/VirtualBar.zip \
@@ -58,23 +14,69 @@ curl -fsSL https://github.com/MuqiuPeng/VirtualBar/releases/latest/download/Virt
   && open /Applications/VirtualBar.app
 ```
 
-三点说明：
+Three things worth knowing:
 
-- 用 `ditto` 而不是 `unzip` 解压。`.app` 是带签名的 bundle，`unzip` 可能破坏其中的资源结构。
-- `xattr -dr com.apple.quarantine` 是必需的。VirtualBar 使用 ad-hoc 签名且未经 Apple 公证，不清除隔离属性时 Gatekeeper 会直接拒绝启动。这一步只作用于 VirtualBar 自身，不改变系统的 Gatekeeper 设置。
-- 首次启动会请求两项权限：辅助功能（用于激活原始 status item）和屏幕录制（用于捕获真实图标）。未授予屏幕录制时会回退为所属应用的图标。
+- Extract with `ditto`, not `unzip`. An `.app` is a signed bundle, and `unzip` can damage the resource structure inside it.
+- `xattr -dr com.apple.quarantine` is required. VirtualBar is ad-hoc signed and not notarised by Apple, so Gatekeeper refuses to launch it while the quarantine attribute is set. This affects only VirtualBar itself; it does not change your system's Gatekeeper settings.
+- First launch asks for two permissions: Accessibility (to activate the original status item) and Screen Recording (to capture the real icons). Without Screen Recording it falls back to the owning application's icon.
 
-卸载：
+Uninstall:
 
 ```bash
 rm -rf /Applications/VirtualBar.app
 ```
 
-## 构建运行
+## How it works
+
+VirtualBar keeps just one toggle button and one hidden spacer in the system menu bar. Once the spacer has folded the third-party menu bar icons away, clicking the VirtualBar button brings up a compact virtual bar. What that bar shows is live icon imagery captured through ScreenCaptureKit; clicking an icon performs an `AXPress` on the original third-party status item through Accessibility.
+
+The virtual bar no longer positions icons at their original screen coordinates — it uses a compact single-row layout. Content beyond 520pt scrolls horizontally, so an icon sitting behind the notch or off-screen can never stretch the bar past the edge of the display.
+
+The current UI uses three plain filled dots as the VirtualBar icon, with no surrounding ring. Virtual bar icons are 34pt with a 40pt hit area, the panel is 48pt tall and at most 520pt wide. Every button has hover and pressed accent backgrounds; the panel is a titleless, borderless, non-resizable window with 12pt continuous corners, zero border width and no system window shadow, and focus rings are disabled on both the content and the buttons.
+
+The virtual bar is anchored to the VirtualBar menu bar button, offset 28pt to the right of it. Right-clicking the VirtualBar icon and choosing `Settings…` opens the settings window, where you can tick which icons belong in the virtual bar, reorder them by dragging, refresh the current third-party icons, and restore the system's natural order.
+
+Visibility and ordering are persisted against a stable item identity rather than list indices. New third-party items are inserted in the system's natural order; an item that disappears temporarily does not lose its stored preference, and its visibility and position are restored when it comes back.
+
+Clicking any virtual icon:
+
+1. Closes the virtual bar.
+2. Drops the spacer to zero so the original status item returns to its natural position.
+3. Re-resolves that item's live window identity and frame.
+4. Performs `AXPress` on the original item.
+5. Watches for menu or popover windows appearing in the target process.
+6. Only re-folds the third-party icons once the target UI has actually closed.
+
+This is what avoids the earlier problem of a menu opening and immediately losing focus because the spacer was restored straight away. There is no short fixed timeout once the UI has been detected — the menu can stay open indefinitely, and the layout is only reclaimed after its window disappears and stays gone for a full second. If an application exposes no observable window, VirtualBar holds the expanded state for at least 20 seconds.
+
+The target UI losing focus also triggers reclamation. VirtualBar watches for global mouse clicks outside the target's popover and for frontmost-application changes; after such an interaction it waits 250ms before restoring the spacer. Clicking *inside* the target menu or popover does not trigger it, because the click location is hit-tested against the live frames of the target process's new windows.
+
+Click outcomes distinguish popovers from ordinary window navigation. Menu and popover windows follow the full lifecycle above. If the target application comes to the front, or the new window is an ordinary application window, and no popover window has appeared within 600ms, the navigation is treated as complete and the spacer is restored immediately — so an entry point that opens a main window, as Notion's does, stops occupying the expanded menu bar space.
+
+`AXPress` returning `AXError.cannotComplete` is no longer treated as an immediate failure. Once a status bar menu enters its synchronous tracking loop it often cannot answer AX requests in time, even though the action was delivered and the menu did appear; VirtualBar proceeds into window lifecycle monitoring rather than wrongly restoring the spacer.
+
+The old paging masks and menu bar curtain have been removed from the running code, so the virtual bar never paints a dark overlay onto the menu bar.
+
+## Capability boundaries
+
+- Ordinary third-party status items: capture and Accessibility activation both supported.
+- System Control Center items: not included in the virtual bar.
+- Live Activities: not included in the virtual bar.
+- Writing cross-process coordinates onto an individual third-party status item: supported by neither the public API nor Accessibility.
+- Menu anchoring is still determined by each third-party application's own real status item. VirtualBar does not fabricate menus.
+
+## Permissions
+
+- Accessibility, to activate the original third-party status item.
+- Screen Recording, to capture the real icons. Without it, the owning application's icon is used as a fallback.
+
+If Accessibility is not yet in effect, VirtualBar leaves the real icons expanded rather than hiding them first.
+
+## Build and run
 
 ```bash
 Scripts/build-app.sh debug
 open .build/debug/VirtualBar.app
 ```
 
-运行日志写入 `/tmp/virtualbar.log`。关键日志包括虚拟 Bar 是否已关闭、目标界面是否被检测到、目标界面何时真正关闭以及 spacer 何时重新折叠。
+Runtime logs go to `/tmp/virtualbar.log`, covering whether the virtual bar has closed, whether the target UI was detected, when it actually closed, and when the spacer re-folded.
