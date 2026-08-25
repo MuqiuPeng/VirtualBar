@@ -48,6 +48,28 @@ VirtualBar 在系统菜单栏中只保留一个切换按钮和一个隐藏 space
 
 如果 Accessibility 尚未生效，VirtualBar 会保持真实图标展开，不会先把它们隐藏。
 
+## 安装
+
+```bash
+curl -fsSL https://github.com/MuqiuPeng/VirtualBar/releases/latest/download/VirtualBar.zip -o /tmp/VirtualBar.zip \
+  && ditto -x -k /tmp/VirtualBar.zip /Applications \
+  && xattr -dr com.apple.quarantine /Applications/VirtualBar.app \
+  && rm /tmp/VirtualBar.zip \
+  && open /Applications/VirtualBar.app
+```
+
+三点说明：
+
+- 用 `ditto` 而不是 `unzip` 解压。`.app` 是带签名的 bundle，`unzip` 可能破坏其中的资源结构。
+- `xattr -dr com.apple.quarantine` 是必需的。VirtualBar 使用 ad-hoc 签名且未经 Apple 公证，不清除隔离属性时 Gatekeeper 会直接拒绝启动。这一步只作用于 VirtualBar 自身，不改变系统的 Gatekeeper 设置。
+- 首次启动会请求两项权限：辅助功能（用于激活原始 status item）和屏幕录制（用于捕获真实图标）。未授予屏幕录制时会回退为所属应用的图标。
+
+卸载：
+
+```bash
+rm -rf /Applications/VirtualBar.app
+```
+
 ## 构建运行
 
 ```bash
