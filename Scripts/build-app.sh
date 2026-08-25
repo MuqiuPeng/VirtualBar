@@ -18,6 +18,14 @@ mkdir -p "$APP_DIR/Contents/MacOS"
 cp "$BIN_PATH" "$APP_DIR/Contents/MacOS/VirtualBar"
 cp "$ROOT_DIR/Sources/VirtualBar/Info.plist" "$APP_DIR/Contents/Info.plist"
 
+# Info.plist points CFBundleIconFile at "AppIcon"; without this the key
+# resolves to nothing and the bundle silently falls back to the generic
+# application icon.
+if [ -f "$ROOT_DIR/Resources/AppIcon.icns" ]; then
+    mkdir -p "$APP_DIR/Contents/Resources"
+    cp "$ROOT_DIR/Resources/AppIcon.icns" "$APP_DIR/Contents/Resources/AppIcon.icns"
+fi
+
 codesign --force --deep --sign - "$APP_DIR"
 
 # Ad-hoc signing gives the bundle a fresh CDHash on every build, so the
