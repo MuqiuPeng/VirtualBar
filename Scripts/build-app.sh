@@ -33,10 +33,18 @@ codesign --force --deep --sign - "$APP_DIR"
 # showing the toggles as ON while the app reads the permissions as denied —
 # and in that state the toggles can't be usefully changed by hand. Clearing
 # the entries here means the next launch prompts cleanly instead.
+#
+# The grants are keyed by bundle id, not by path, so this also revokes them
+# from any other VirtualBar build that is running. Packaging a release is not
+# about to be launched and granted here, so KEEP_TCC=1 skips the reset there.
 BUNDLE_ID="com.virtualbar.app"
-for service in Accessibility ScreenCapture; do
-    tccutil reset "$service" "$BUNDLE_ID" >/dev/null 2>&1 || true
-done
-echo "Cleared TCC grants for $BUNDLE_ID (rebuild invalidates them)"
+if [ "${KEEP_TCC:-0}" = "1" ]; then
+    echo "Kept TCC grants for $BUNDLE_ID (KEEP_TCC=1)"
+else
+    for service in Accessibility ScreenCapture; do
+        tccutil reset "$service" "$BUNDLE_ID" >/dev/null 2>&1 || true
+    done
+    echo "Cleared TCC grants for $BUNDLE_ID (rebuild invalidates them)"
+fi
 
 echo "Built $APP_DIR"
