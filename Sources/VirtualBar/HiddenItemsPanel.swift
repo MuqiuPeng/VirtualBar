@@ -130,24 +130,24 @@ final class HiddenItemsPanel: NSPanel {
             return
         }
 
-        let documentWidth = Metrics.padding * 2 + CGFloat(ordered.count) * Metrics.cellSize
+        let iconSizes = ordered.map { displaySize(for: images[$0.windowID]) }
+        let cellWidths = iconSizes.map { $0.width + (Metrics.cellSize - Metrics.iconSize) }
+        let documentWidth = Metrics.padding * 2 + cellWidths.reduce(0, +)
         let availableWidth = max(120, screen.visibleFrame.width - Metrics.edgeInset * 2)
         let width = min(documentWidth, Metrics.maximumWidth, availableWidth)
         let height = Metrics.padding * 2 + Metrics.cellSize
         let document = NSView(frame: NSRect(x: 0, y: 0, width: documentWidth, height: height))
         document.focusRingType = .none
 
+        var cursorX = Metrics.padding
         for (index, item) in ordered.enumerated() {
-            let button = makeButton(for: item, image: images[item.windowID])
-            button.frame = NSRect(
-                x: Metrics.padding + CGFloat(index) * Metrics.cellSize,
-                y: Metrics.padding,
-                width: Metrics.cellSize,
-                height: Metrics.cellSize
-            )
+            let button = makeButton(for: item, image: images[item.windowID], size: iconSizes[index])
+            button.frame = NSRect(x: cursorX, y: Metrics.padding, width: cellWidths[index], height: Metrics.cellSize)
             document.addSubview(button)
             buttonItems[item.windowID] = item
+            cursorX += cellWidths[index]
         }
+        debugLog("VirtualBar virtualBar cellWidths=\(cellWidths.map { Int($0) })")
 
         scrollView.documentView = document
         scrollView.hasHorizontalScroller = documentWidth > width
@@ -190,7 +190,20 @@ final class HiddenItemsPanel: NSPanel {
         }
     }
 
-    private func makeButton(for item: MenuBarItem, image: NSImage?) -> NSButton {
+    /// Menu bar items aren't square: some carry text or a meter beside the
+    /// glyph. Every capture is exactly as tall as the menu bar, so scaling by
+    /// height applies one factor to all of them. That keeps each item's own
+    /// aspect ratio and keeps items the same size relative to each other as
+    /// they are in the real bar. The fallback app icon is square by nature.
+    private func displaySize(for image: NSImage?) -> NSSize {
+        guard let image, image.size.width > 0, image.size.height > 0 else {
+            return NSSize(width: Metrics.iconSize, height: Metrics.iconSize)
+        }
+        let scale = Metrics.iconSize / image.size.height
+        return NSSize(width: (image.size.width * scale).rounded(), height: Metrics.iconSize)
+    }
+
+    private func makeButton(for item: MenuBarItem, image: NSImage?, size: NSSize) -> NSButton {
         let button = VirtualIconButton(frame: .zero)
         button.bezelStyle = .regularSquare
         button.isBordered = false
@@ -201,7 +214,7 @@ final class HiddenItemsPanel: NSPanel {
         button.action = #selector(buttonClicked(_:))
         button.identifier = NSUserInterfaceItemIdentifier("\(item.windowID)")
         if let image {
-            image.size = NSSize(width: Metrics.iconSize, height: Metrics.iconSize)
+            image.size = size
             button.image = image
         } else {
             button.image = ItemIcon.fallback(for: item, size: Metrics.iconSize)
