@@ -2,7 +2,17 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-VirtualBar is a proof of concept for a virtual menu bar on macOS 14 and later.
+## Status: no longer developed
+
+VirtualBar works on **macOS 14 and 15 only**.
+
+macOS 27 replaced the menu bar implementation. A system process, `MenuBarAgent`, now owns the whole bar as a single window; individual status items are no longer separate windows, and an oversized spacer item can no longer push icons off-screen. That spacer trick is the mechanism VirtualBar is built on, so folding simply does not work any more — this is a design change, not a bug that can be worked around.
+
+Those versions also collapse menu bar icons natively, through the `«` control in the menu bar, which is what VirtualBar existed to provide. **On macOS 26 or later, use the built-in collapse instead.**
+
+Verified broken on macOS 27.2. macOS 26 is untested and very likely affected as well.
+
+VirtualBar is a proof of concept for a virtual menu bar on macOS 14 and 15.
 
 ## Install
 

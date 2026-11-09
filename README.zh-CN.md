@@ -2,7 +2,17 @@
 
 [English](README.md) · **简体中文**
 
-VirtualBar 是一个面向 macOS 14 及以上版本的虚拟菜单栏 POC。
+## 状态：已停止开发
+
+VirtualBar **仅支持 macOS 14 和 15**。
+
+macOS 27 重写了菜单栏的实现。系统进程 `MenuBarAgent` 现在以单个窗口接管整条菜单栏，各个状态图标不再是独立窗口，超宽的 spacer 也无法再把图标推出屏幕。而 spacer 正是 VirtualBar 折叠功能赖以实现的机制，因此折叠彻底失效——这是系统设计变更，不是可以绕过的 bug。
+
+这些版本同时已原生支持菜单栏图标折叠（菜单栏中的 `«` 控件），这正是 VirtualBar 当初要解决的问题。**macOS 26 及以上请直接使用系统自带的折叠功能。**
+
+已在 macOS 27.2 上确认失效。macOS 26 未测试，极可能同样受影响。
+
+VirtualBar 是一个面向 macOS 14 和 15 的虚拟菜单栏 POC。
 
 ## 安装
 
